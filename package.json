@@ -1,28 +1,13 @@
 {
-  "name": "chat_room",
-  "version": "1.0.0",
-  "description": "Just a Chat Room app",
+  "name": "socket.io-chat",
+  "version": "0.0.0",
+  "description": "A simple chat client using socket.io",
+  "main": "index.js",
+  "author": "Grant Timmerman",
   "private": true,
-  "scripts": {
-    "start": "nodemon app.js"
-  },
-  "author": {
-    "name": "Jonas Voland",
-    "email": "j.voland@gmx.ch"
-  },
+  "license": "BSD",
   "dependencies": {
-    "body-parser": "^1.14.1",
-    "errorhandler": "^1.4.2",
-    "express": "^4.13.3",
-    "express-session": "^1.11.3",
-    "method-override": "^2.3.5",
-    "morgan": "^1.6.1",
-    "multer": "^1.0.6",
-    "nodemon": "^1.7.3",
-    "serve-favicon": "^2.3.0",
-    "socket.io": "^1.3.7"
-  },
-  "devDependencies": {
-    "fly": "^0.8.3"
+    "express": "3.4.8",
+	"socket.io": "1.3.5"
   }
 }

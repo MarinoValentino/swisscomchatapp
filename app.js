@@ -1,71 +1,77 @@
-var app = require('express')();
+// Setup basic express server
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
+// var io = require('../..')(server);
+// New:
+var io = require('socket.io')(server);
+var port = process.env.PORT || 3000;
 
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var methodOverride = require('method-override');
-var session = require('express-session');
-var bodyParser = require('body-parser');
-var multer = require('multer');
-var errorHandler = require('errorhandler');
-
-app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('dev'));
-app.use(methodOverride());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.get('/', function (req, res) {
-  res.sendfile("./public/index.html")
-})
-
-app.get('/css/style.css', function (req, res) {
-  res.sendfile("./public/css/style.css")
-})
-
-app.get('/js/index.js', function (req, res) {
-  res.sendfile("./public/js/index.js")
-})
-
-// error handling middleware should be loaded after the loading the routes
-if ('development' == app.get('env')) {
-  app.use(errorHandler());
-}
-
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-
-http.listen(3000, function(){
-  console.log('Express server listening on *:3000');
+server.listen(port, function () {
+  console.log('Server listening at port %d', port);
 });
 
-var connected;
-var sockets;
-var userOnline = 0;
+// Routing
+app.use(express.static(__dirname + '/public'));
+
+// Chatroom
+
+var numUsers = 0;
+
 io.on('connection', function (socket) {
+  var addedUser = false;
 
-
-  connected = io.sockets.connected;
-  sockets = io.sockets.sockets;
-  console.log(connected)
-  console.log(connected.length)
-  console.log(sockets)
-  console.log(sockets.length)
-
-
-  console.log('a user connected');
-
-
-
-  socket.emit('user connected', userOnline);
-
-  socket.on('chat message', function(msg){
-    io.broadcast.emit('chat message', msg);
-    //socket.broadcast.emit('chat message', msg);
+  // when the client emits 'new message', this listens and executes
+  socket.on('new message', function (data) {
+    // we tell the client to execute 'new message'
+    socket.broadcast.emit('new message', {
+      username: socket.username,
+      message: data
+    });
   });
 
+  // when the client emits 'add user', this listens and executes
+  socket.on('add user', function (username) {
+    if (addedUser) return;
+
+    // we store the username in the socket session for this client
+    socket.username = username;
+    ++numUsers;
+    addedUser = true;
+    socket.emit('login', {
+      numUsers: numUsers
+    });
+    // echo globally (all clients) that a person has connected
+    socket.broadcast.emit('user joined', {
+      username: socket.username,
+      numUsers: numUsers
+    });
+  });
+
+  // when the client emits 'typing', we broadcast it to others
+  socket.on('typing', function () {
+    socket.broadcast.emit('typing', {
+      username: socket.username
+    });
+  });
+
+  // when the client emits 'stop typing', we broadcast it to others
+  socket.on('stop typing', function () {
+    socket.broadcast.emit('stop typing', {
+      username: socket.username
+    });
+  });
+
+  // when the user disconnects.. perform this
   socket.on('disconnect', function () {
-    console.log('user disconnected');
-    socket.broadcast.emit('user disconnected', userOnline);
+    if (addedUser) {
+      --numUsers;
+
+      // echo globally that this client has left
+      socket.broadcast.emit('user left', {
+        username: socket.username,
+        numUsers: numUsers
+      });
+    }
   });
 });
